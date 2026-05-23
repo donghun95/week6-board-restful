@@ -21,7 +21,7 @@ public interface BoardMapper {
 
     List<Board> findOffsetPage(@Param("limit") int limit, @Param("offset") int offset);
 
-    List<Board> findCursorPage(@Param("createdAt") LocalDateTime createdAt, @Param("cursor") Long cursor, @Param("limit") int limit);
+    List<Board> findCursorPage(@Param("cursorCreatedAt") LocalDateTime cursorCreatedAt, @Param("cursorId") Long cursorId, @Param("limit") int limit);
 
     void increaseViews(@Param("id") Long id);
 

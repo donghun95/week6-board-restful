@@ -56,19 +56,22 @@ public class BoardService {
                 .toList();
     }
 
-    public CursorResponse<BoardResponse> findCursorPage(LocalDateTime createdAt, Long cursor, int size) {
+    public CursorResponse<BoardResponse> findCursorPage(LocalDateTime cursorCreatedAt, Long cursorId, int size) {
         int normalizedSize = normalizeSize(size);
         int limitPlusOne = normalizedSize + 1;
 
-        List<Board> rows = boardMapper.findCursorPage(createdAt, cursor, limitPlusOne);
+        List<Board> rows = boardMapper.findCursorPage(cursorCreatedAt, cursorId, limitPlusOne);
 
         boolean hasNext = rows.size() > normalizedSize;
         List<Board> pageItems = hasNext ? rows.subList(0, normalizedSize) : rows;
-        Long nextCursor = hasNext ? pageItems.get(pageItems.size() - 1).getId() : null;
+        Long nextCursorId = hasNext ? pageItems.get(pageItems.size() - 1).getId() : null;
+        LocalDateTime nextCursorCreatedAt = hasNext ? pageItems.get(pageItems.size() -1).getCreatedAt() : null;
+
 
         return CursorResponse.<BoardResponse>builder()
                 .items(pageItems.stream().map(BoardResponse::from).toList())
-                .nextCursor(nextCursor)
+                .nextCursorId(nextCursorId)
+                .nextCursorCreatedAt(nextCursorCreatedAt)
                 .hasNext(hasNext)
                 .build();
     }

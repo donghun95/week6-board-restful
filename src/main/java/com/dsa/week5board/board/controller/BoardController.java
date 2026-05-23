@@ -62,11 +62,11 @@ public class BoardController {
 
     @GetMapping("/cursor")
     public ResponseEntity<CursorResponse<BoardResponse>> cursorPage(
-            @RequestParam(required = false) Long cursor,
+            @RequestParam(required = false) Long cursorId,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) LocalDateTime createdAt
+            @RequestParam(required = false) LocalDateTime cursorCreatedAt
             ) {
-        return ResponseEntity.ok(boardService.findCursorPage(createdAt,cursor, size));
+        return ResponseEntity.ok(boardService.findCursorPage(cursorCreatedAt,cursorId, size));
     }
 
     @PostMapping("/{id}/views")

@@ -47,13 +47,10 @@
         SELECT id, title, content, writer, views, created_at
         FROM board
         <where>
-            <if test="cursor != null and createdAt == null">
-                AND id &lt; #{cursor}
-            </if>
-            <if test="createdAt != null and cursor != null">
+            <if test="cursorCreatedAt != null and cursorId != null">
                 AND (
-                created_at &lt; #{createdAt}
-                OR (created_at = #{createdAt} AND id &lt; #{cursor})
+                created_at &lt; #{cursorCreatedAt}
+                OR (created_at = #{cursorCreatedAt} AND id &lt; #{cursorId})
                 )
             </if>
         </where>
