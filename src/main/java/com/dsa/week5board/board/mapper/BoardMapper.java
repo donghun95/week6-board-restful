@@ -17,15 +17,15 @@ public interface BoardMapper {
 
     Optional<Board> findById(Long id);
 
-    List<Board> search(BoardSearchRequest request);
 
-    List<Board> findOffsetPage(@Param("limit") int limit, @Param("offset") int offset);
-
-    List<Board> findCursorPage(@Param("cursorCreatedAt") LocalDateTime cursorCreatedAt, @Param("cursorId") Long cursorId, @Param("limit") int limit);
+    List<Board> findCursorPage(@Param("search") BoardSearchRequest SearchRequest,
+                               @Param("cursorCreatedAt") LocalDateTime cursorCreatedAt,
+                               @Param("cursorId") Long cursorId,
+                               @Param("limit") int limit);
 
     void increaseViews(@Param("id") Long id);
 
-    void deleteById(Long id);
+    int deleteById(Long id);
 
     List<Board> findByIds(@Param("ids") List<Long> ids);
 }

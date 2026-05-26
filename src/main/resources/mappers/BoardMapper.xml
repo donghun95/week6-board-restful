@@ -47,6 +47,18 @@
         SELECT id, title, content, writer, views, created_at
         FROM board
         <where>
+            <if test="search != null and search.title != null and search.title != ''">
+                AND title LIKE CONCAT('%', #{search.title}, '%')
+            </if>
+            <if test="search != null and search.writer != null and search.writer != ''">
+                AND writer = #{search.writer}
+            </if>
+            <if test="search != null and search.fromDate != null">
+                AND created_at &gt;= #{search.fromDate}
+            </if>
+            <if test="search != null and search.toDate != null">
+                AND created_at &lt; DATE_ADD(#{search.toDate}, INTERVAL 1 DAY)
+            </if>
             <if test="cursorCreatedAt != null and cursorId != null">
                 AND (
                 created_at &lt; #{cursorCreatedAt}

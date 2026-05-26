@@ -1,30 +1,51 @@
+### 6주차 RESTful: 목록 조회 + 복합 Cursor 첫 페이지
+GET http://localhost:18080/api/boards?size=2
+
+### 6주차 RESTful: 복합 Cursor 다음 페이지
+# 먼저 위 요청(GET /api/boards?size=2)을 실행한 뒤,
+# 응답의 nextCursorId, nextCursorCreatedAt 값으로 아래 값을 교체해서 실행
+# createdAt은 DB 초기화 시점에 따라 달라집니다.
+# 예: GET http://localhost:18080/api/boards?cursorId=4&cursorCreatedAt=2026-05-21T10:17:25&size=2
+
+### 6주차 RESTful: 검색 조건도 같은 컬렉션 조회 API로 처리
+GET http://localhost:18080/api/boards?title=Cursor&writer=donghun
+
+### 6주차 RESTful: 여러 id 조회도 같은 컬렉션 조회 API로 처리
+GET http://localhost:18080/api/boards?ids=1&ids=3&ids=5
+
 ### 단건 조회
 GET http://localhost:18080/api/boards/1
 
-### 동적 검색: 제목 + 작성자
-GET http://localhost:18080/api/boards/search?title=Cursor&writer=donghun
+### 조회수 증가: PATCH 방식
+PATCH http://localhost:18080/api/boards/1/views
 
-### foreach: 여러 id를 IN 절로 조회
-GET http://localhost:18080/api/boards/bulk?ids=1&ids=3&ids=5
-
-### Offset 페이징
-GET http://localhost:18080/api/boards/offset?page=0&size=3
-
-### Cursor 페이징 첫 페이지
-GET http://localhost:18080/api/boards/cursor?size=3
-
-### Cursor 페이징 다음 페이지
-GET http://localhost:18080/api/boards/cursor?cursor=3&size=3
-
-### 조회수 증가
-POST http://localhost:18080/api/boards/1/views
-
-### 게시글 등록
+### 게시글 등록: 201 Created + Location 헤더 확인
 POST http://localhost:18080/api/boards
 Content-Type: application/json
 
 {
-  "title": "수업 중 등록한 글",
-  "content": "Spring Boot + MyBatis 5주차 시연",
-  "writer": "mentor"
+  "title": "REST 리팩토링",
+  "content": "6주차 시연",
+  "writer": "donghun"
 }
+
+### 게시글 삭제: 위 등록 응답의 id 값으로 실행
+DELETE http://localhost:18080/api/boards/6
+
+### 에러 처리: 없는 게시글은 404
+GET http://localhost:18080/api/boards/6
+
+### 에러 처리: 없는 게시글 삭제도 404
+DELETE http://localhost:18080/api/boards/111111111
+
+### 에러 처리: 입력값 검증 실패는 400 + fieldErrors
+POST http://localhost:18080/api/boards
+Content-Type: application/json
+
+{}
+
+### 에러 처리: query parameter 타입 변환 실패는 400
+GET http://localhost:18080/api/boards?cursorId=abc&size=2
+
+### Swagger/OpenAPI JSON 확인
+GET http://localhost:18080/v3/api-docs

@@ -3,6 +3,7 @@ package com.dsa.week5board.board.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.dsa.week5board.board.exception.BoardNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,43 +38,44 @@ public class BoardService {
     public BoardResponse findById(Long id) {
         return boardMapper.findById(id)
                 .map(BoardResponse::from)
-                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다: " + id));
+                .orElseThrow(() -> new BoardNotFoundException(id));
     }
 
-    public List<BoardResponse> search(BoardSearchRequest request) {
-        return boardMapper.search(request).stream()
-                .map(BoardResponse::from)
-                .toList();
-    }
+    public CursorResponse<BoardResponse> list(
+            BoardSearchRequest searchRequest,
+            List<Long> ids,
+            Long cursorId,
+            LocalDateTime cursorCreatedAt,
+            int size
+    ) {
+        if (ids != null && !ids.isEmpty()) {
+            List<BoardResponse> items = boardMapper.findByIds(ids).stream()
+                    .map(BoardResponse::from)
+                    .toList();
 
-    public List<BoardResponse> findOffsetPage(int page, int size) {
-        int normalizedPage = Math.max(page, 0);
-        int normalizedSize = normalizeSize(size);
-        int offset = normalizedPage * normalizedSize;
+            return CursorResponse.<BoardResponse>builder()
+                    .items(items)
+                    .hasNext(false)
+                    .build();
+        }
 
-        return boardMapper.findOffsetPage(normalizedSize, offset).stream()
-                .map(BoardResponse::from)
-                .toList();
-    }
-
-    public CursorResponse<BoardResponse> findCursorPage(LocalDateTime cursorCreatedAt, Long cursorId, int size) {
         int normalizedSize = normalizeSize(size);
         int limitPlusOne = normalizedSize + 1;
 
-        List<Board> rows = boardMapper.findCursorPage(cursorCreatedAt, cursorId, limitPlusOne);
+        List<Board> rows = boardMapper.findCursorPage(searchRequest, cursorCreatedAt, cursorId, limitPlusOne);
 
         boolean hasNext = rows.size() > normalizedSize;
         List<Board> pageItems = hasNext ? rows.subList(0, normalizedSize) : rows;
-        Long nextCursorId = hasNext ? pageItems.get(pageItems.size() - 1).getId() : null;
-        LocalDateTime nextCursorCreatedAt = hasNext ? pageItems.get(pageItems.size() -1).getCreatedAt() : null;
+        Board lastItem = hasNext ? pageItems.get(pageItems.size() - 1) : null;
 
 
         return CursorResponse.<BoardResponse>builder()
                 .items(pageItems.stream().map(BoardResponse::from).toList())
-                .nextCursorId(nextCursorId)
-                .nextCursorCreatedAt(nextCursorCreatedAt)
+                .nextCursorId(lastItem == null ? null : lastItem.getId())
+                .nextCursorCreatedAt(lastItem == null ? null : lastItem.getCreatedAt())
                 .hasNext(hasNext)
                 .build();
+
     }
 
     @Transactional
@@ -84,17 +86,10 @@ public class BoardService {
 
     @Transactional
     public void deleteById(Long id) {
-        boardMapper.deleteById(id);
-    }
-
-    public List<BoardResponse> findByIds(List<Long> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return List.of();
+        int deletedCount = boardMapper.deleteById(id);
+        if (deletedCount == 0) {
+            throw new BoardNotFoundException(id);
         }
-
-        return boardMapper.findByIds(ids).stream()
-                .map(BoardResponse::from)
-                .toList();
     }
 
     private int normalizeSize(int size) {

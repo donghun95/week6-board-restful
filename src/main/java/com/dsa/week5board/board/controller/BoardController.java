@@ -1,19 +1,20 @@
 package com.dsa.week5board.board.controller;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.dsa.week5board.board.dto.BoardCreateRequest;
 import com.dsa.week5board.board.dto.BoardResponse;
@@ -24,6 +25,7 @@ import com.dsa.week5board.board.service.BoardService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+@Tag(name = "Boards", description = "게시글 RESTful API")
 @RestController
 @RequestMapping("/api/boards")
 @RequiredArgsConstructor
@@ -31,51 +33,77 @@ public class BoardController {
 
     private final BoardService boardService;
 
+    @Operation(summary = "게시글 등록", description = "게시글을 생성하고 생성된 리소스 URI를 Location 헤더로 반환합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "게시글 생성 성공"),
+            @ApiResponse(responseCode = "401", description = " 입력값 검증 실패", content = @Content)
+    })
+
     @PostMapping
     public ResponseEntity<BoardResponse> create(@Valid @RequestBody BoardCreateRequest request) {
         BoardResponse response = boardService.create(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        URI location = URI.create("/api/boards/" + response.getId());
+        return ResponseEntity.created(location).body(response);
     }
 
+    @Operation(summary = "게시글 단건 조회")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "게시글 조회 성공"),
+            @ApiResponse(responseCode = "404", description = "게시글 없음", content = @Content)
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<BoardResponse> get(@PathVariable Long id) {
+    public ResponseEntity<BoardResponse> get(
+            @Parameter(description = "게시글 ID", example = "1") @PathVariable Long id
+
+    ) {
         return ResponseEntity.ok(boardService.findById(id));
     }
 
-    @GetMapping("/search")
-    public ResponseEntity<List<BoardResponse>> search(@ModelAttribute BoardSearchRequest request) {
-        return ResponseEntity.ok(boardService.search(request));
-    }
-
-    @GetMapping("/bulk")
-    public ResponseEntity<List<BoardResponse>> bulk(@RequestParam(name = "ids", required = false) List<Long> ids) {
-        return ResponseEntity.ok(boardService.findByIds(ids));
-    }
-
-    @GetMapping("/offset")
-    public ResponseEntity<List<BoardResponse>> offsetPage(
-            @RequestParam(defaultValue = "0") int page,
+    @Operation(
+            summary = "게시글 목록 조회",
+            description = "검색 조건, ID 필터, 복합 Cursor 페이징을 query string으로 조합합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "게시글 목록 조회 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 qurey parameter", content = @Content)
+    })
+    @GetMapping
+    public ResponseEntity<CursorResponse<BoardResponse>> list(
+            @ParameterObject @ModelAttribute BoardSearchRequest SearchRequest,
+            @Parameter(description = "조회할 게시글 ID 목록", example = "1")
+            @RequestParam(name="ids", required = false) List<Long> ids,
+            @Parameter(description = "다음 페이지 조회 기준 ID", example = "4")
+            @RequestParam(required = false) Long cursorId,
+            @Parameter(description = "다음 페이지 조회 기준 생성 시각", example = "2026-05-26T10:12:59")
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime cursorCreatedAt,
+            @Parameter(description = "페이지 크기", example = "2")
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(boardService.findOffsetPage(page, size));
+        return ResponseEntity.ok(boardService.list(SearchRequest,ids,cursorId,cursorCreatedAt,size));
     }
 
-    @GetMapping("/cursor")
-    public ResponseEntity<CursorResponse<BoardResponse>> cursorPage(
-            @RequestParam(required = false) Long cursorId,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) LocalDateTime cursorCreatedAt
-            ) {
-        return ResponseEntity.ok(boardService.findCursorPage(cursorCreatedAt,cursorId, size));
-    }
-
-    @PostMapping("/{id}/views")
-    public ResponseEntity<BoardResponse> increaseViews(@PathVariable Long id) {
+    @Operation(summary = "게시글 조회수 증가", description = "Views 값을 DB 원자적 UPDATE로 1 증가시킵니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회수 증가 성공"),
+            @ApiResponse(responseCode = "404", description = "게시글 없음", content = @Content)
+    })
+    @PatchMapping("/{id}/views")
+    public ResponseEntity<BoardResponse> increaseViews(
+            @Parameter(description = "게시글 ID", example = "1") @PathVariable Long id
+    ) {
         return ResponseEntity.ok(boardService.increaseViews(id));
     }
 
+    @Operation(summary = "게시글 삭제")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "게시글 삭제 성공"),
+            @ApiResponse(responseCode = "404", description = "게시글 없음", content = @Content)
+    })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(
+            @Parameter(description = "게시글 ID", example = "1") @PathVariable Long id
+    ) {
         boardService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
