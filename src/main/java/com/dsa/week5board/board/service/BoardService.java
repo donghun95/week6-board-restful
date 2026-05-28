@@ -35,6 +35,18 @@ public class BoardService {
         return findById(board.getId());
     }
 
+    @Transactional
+    public BoardResponse update(BoardCreateRequest request){
+        Board board = Board.builder()
+                .title(request.getTitle())
+                .content(request.getContent())
+                .writer(request.getWriter())
+                .id(request.getId())
+                .build();
+        boardMapper.update(board);
+        return findById(board.getId());
+    }
+
     public BoardResponse findById(Long id) {
         return boardMapper.findById(id)
                 .map(BoardResponse::from)

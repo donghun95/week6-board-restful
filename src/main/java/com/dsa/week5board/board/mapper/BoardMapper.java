@@ -15,6 +15,8 @@ public interface BoardMapper {
 
     void insert(Board board);
 
+    void update(Board board);
+
     Optional<Board> findById(Long id);
 
 

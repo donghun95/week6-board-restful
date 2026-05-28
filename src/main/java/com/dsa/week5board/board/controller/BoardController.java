@@ -46,6 +46,13 @@ public class BoardController {
         return ResponseEntity.created(location).body(response);
     }
 
+
+    @PutMapping
+    public ResponseEntity<BoardResponse> put(@Valid @RequestBody BoardCreateRequest request) {
+
+        return  ResponseEntity.ok(boardService.update(request));
+    }
+
     @Operation(summary = "게시글 단건 조회")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "게시글 조회 성공"),
@@ -107,4 +114,5 @@ public class BoardController {
         boardService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
 }
