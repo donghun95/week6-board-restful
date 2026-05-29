@@ -49,6 +49,7 @@ public class GlobalExceptionHandler {
                 .toList();
                 ErrorResponse body = ErrorResponse.builder()
                         .timestamp(LocalDateTime.now())
+                        .status(ErrorCode.INVALID_INPUT.getStatus().value())
                         .code(ErrorCode.INVALID_INPUT.getCode())
                         .message(ErrorCode.INVALID_INPUT.getDefaultMessage())
                         .path(extractPath(request))
